@@ -41,7 +41,9 @@ jobs:
         env:
           LANE_MARKER: ${{ inputs.marker && secrets.LANE_MARKER || '' }}
           NIGHT: ${{ inputs.night }}
+          WANT_MARKER: ${{ inputs.marker }}
         run: |
+          if [ "$WANT_MARKER" = true ] && [ -z "$LANE_MARKER" ]; then echo "secret LANE_MARKER is empty" >&2; exit 1; fi
           pnpm start > rig.log 2>&1 &
           for i in $(seq 30); do curl -fs localhost:8787/health >/dev/null && break; sleep 1; done
           mkdir -p _site
