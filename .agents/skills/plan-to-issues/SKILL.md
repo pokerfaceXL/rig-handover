@@ -14,12 +14,14 @@ in a shell this agent can run.
 2. Draft the split as a table: title · plan section · scope · done when · blocked by.
    One issue per unit of work.
 3. **Stop and show the table to the human.** Publish nothing until they approve it.
-4. Ask the human what every issue here must carry (fields, labels, wording), unless it is
-   already written down in this session or in the repo.
-5. Create each issue in dependency order, so blocked-by can cite real numbers:
+4. Every issue carries the shape in [What every issue carries](#what-every-issue-carries).
+   Ask the human only about anything beyond it (extra fields, labels, wording).
+5. Create the plan's label once, then each issue in dependency order, so blocked-by can cite
+   real numbers:
 
    ```sh
-   gh issue create --title "<title>" --body-file <tmp.md>
+   gh label create "plan:<plan>" --description "Issues split from plan.md (<plan>)"
+   gh issue create --title "<title>" --label "plan:<plan>" --body-file <tmp.md>
    ```
 
 6. Record every issue URL from gh's output (not from memory) and reply with the list.
@@ -29,6 +31,32 @@ Closing one, with the closing comment from AGENTS.md:
 ```sh
 gh issue close <n> -c "<closing comment>"
 ```
+
+## What every issue carries
+
+Agreed with the human on the morning-digest plan (2026-10-29). Reviewers sort by the first line
+and the label, so keep both exact.
+
+- **Label** `plan:<plan>`, the `plan:` value from `plan.md`'s frontmatter (e.g. `plan:morning-digest`).
+- **Body**, in this order:
+
+  ```md
+  Source: plan.md § <n>
+
+  ## Scope
+  <what this issue changes, in the plan's words; the rules from AGENTS.md and the ADRs it must keep>
+
+  ## Done when
+  <the plan's check for this section, as written>
+
+  ## Blocked by
+  <#n, and what for (to start, or for the done condition); — if nothing>
+  ```
+
+- `§ <n>` is the plan's section number as written (`1`, `2a`). A section split into two issues
+  gives both the same source.
+- An issue that waits on someone outside the repo (a reviewer, a human) says so under
+  `Blocked by` and stays open until they have acted: "sent" is not "seen".
 
 ## No `gh`
 
