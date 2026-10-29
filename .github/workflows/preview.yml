@@ -1,0 +1,56 @@
+# Publishes a preview of one digest page to GitHub Pages (plan.md § 3, § 4; ADR 0003).
+# The page is rendered here, by rig itself, and deployed as a Pages artifact: no preview file is
+# ever committed, so taking the marker off (run again with marker=false) leaves none behind.
+name: preview
+
+on:
+  workflow_dispatch:
+    inputs:
+      night:
+        description: Night to preview (runs/<night>.jsonl)
+        default: '2026-10-28'
+      marker:
+        description: Show LANE_MARKER in the banner (false for the clean-up upload)
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: corepack enable && pnpm install
+        env:
+          COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
+      - name: Render the page
+        env:
+          LANE_MARKER: ${{ inputs.marker && secrets.LANE_MARKER || '' }}
+          NIGHT: ${{ inputs.night }}
+        run: |
+          pnpm start > rig.log 2>&1 &
+          for i in $(seq 30); do curl -fs localhost:8787/health >/dev/null && break; sleep 1; done
+          mkdir -p _site
+          curl -fsS "localhost:8787/digest/$NIGHT" -o _site/index.html
+          if [ -n "$LANE_MARKER" ]; then grep -qF "$LANE_MARKER" _site/index.html
+          else grep -qF 'no marker set' _site/index.html; fi
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+          retention-days: 1
+      - id: deploy
+        uses: actions/deploy-pages@v4
